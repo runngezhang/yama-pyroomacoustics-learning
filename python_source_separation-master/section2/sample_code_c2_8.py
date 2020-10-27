@@ -9,7 +9,7 @@ import numpy as np
 import scipy.signal as sp
 
 #読み込むサンプルファイル
-sample_wave_file="./CMU_ARCTIC/cmu_us_aew_arctic/wav/arctic_a0001.wav"
+sample_wave_file="/Users/kenta/Programing/github/yama-pyroomacoustics-learning/python_source_separation-master/section2/CMU_ARCTIC/cmu_us_axb_arctic/wav/arctic_a0001.wav"
 
 #ファイルを読み込む
 wav=wave.open(sample_wave_file)
