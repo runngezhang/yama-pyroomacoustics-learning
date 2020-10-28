@@ -1,26 +1,20 @@
-
-
 #wave形式の音声波形を読み込むためのモジュール(wave)をインポート
 import wave as wave
-
 #numpyをインポート（波形データを2byteの数値列に変換するために使用）
 import numpy as np
-
 #scipyのsignalモジュールをインポート（stft等信号処理計算用)
 import scipy.signal as sp
-
 #sounddeviceモジュールをインポート
 import sounddevice as sd
+#matplotlib
+import matplotlib.pyplot as plt
 
 #読み込むサンプルファイル
 sample_wave_file="/Users/kenta/Programing/github/yama-pyroomacoustics-learning/python_source_separation-master/section2/CMU_ARCTIC/cmu_us_axb_arctic/wav/arctic_a0001.wav"
-
 #ファイルを読み込む
 wav=wave.open(sample_wave_file)
-
 #PCM形式の波形データを読み込み
 data=wav.readframes(wav.getnframes())
-
 #dataを2バイトの数値列に変換
 data=np.frombuffer(data, dtype=np.int16)
 
@@ -29,7 +23,6 @@ f,t,stft_data=sp.stft(data,fs=wav.getframerate(),window="hann",nperseg=512,nover
 
 #特定の周波数成分を消す(100番目の周波数よりも高い周波数成分を全て消す)
 stft_data[100:,:]=0
-
 
 #時間領域の波形に戻す
 t,data_post=sp.istft(stft_data,fs=wav.getframerate(),window="hann",nperseg=512,noverlap=256)
@@ -47,3 +40,33 @@ status = sd.wait()
 
 #waveファイルを閉じる
 wav.close()
+
+# 変換前と復元後が一緒であることを確認する（二つ並べてみる）
+fig = plt.figure(figsize=(10,10))
+
+ax1 = fig.add_subplot(2,1,1)
+ax2 = fig.add_subplot(2,1,2)
+
+# 変換前のスペクトグラム
+spectrum, freqs, t, im=ax1.specgram(data,NFFT=512,noverlap=512/16*15, Fs=wav.getframerate())
+# サブタイトル
+ax1.set_title('Original Sound')
+# x軸のラベル
+ax1.set_xlabel("Time [sec]")
+# y軸のラベル
+ax1.set_ylabel("Frequency [Hz]")
+
+# 復元後のスペクトグラム
+spectrum, freqs, t, im=ax2.specgram(data_post,NFFT=512,noverlap=512/16*15, Fs=wav.getframerate())
+# サブタイトル
+ax2.set_title('Restored Sound')
+# x軸のラベル
+ax2.set_xlabel("Time [sec]")
+# y軸のラベル
+ax2.set_ylabel("Frequency [Hz]")
+
+#レイアウトの設定
+fig.tight_layout()
+#plt.savefig("./spectrogram_stft_istft.png")
+plt.show()
+

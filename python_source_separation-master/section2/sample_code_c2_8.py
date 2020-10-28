@@ -19,7 +19,7 @@ data=wav.readframes(wav.getnframes())
 
 #dataを2バイトの数値列に変換
 data=np.frombuffer(data, dtype=np.int16)
-
+print(data.shape)
 #短時間フーリエ変換を行う
 f,t,stft_data=sp.stft(data,fs=wav.getframerate(),window="hann",nperseg=512,noverlap=256)
 
