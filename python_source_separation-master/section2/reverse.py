@@ -52,16 +52,53 @@ def STFT(sig,fs,frlen,frsft,wnd):
         st=(i-1) * frsft # ひとつ前の場所から窓をかける
         # スライス処理と窓関数のかけ算
         #print(sig[st:st+frlen].shape,(hamming(frlen).T).shape)
+        # 窓関数をかけるFFTを行う
         data_stft_split = np.fft.fft((sig[st:st+frlen].T*hamming(frlen)))
         #print(a)
         stft_data.append(data_stft_split)
-        # 窓関数をかける
-        # FFTを行う
+
     stft_data = np.array(stft_data)
     #print("stft_data.shape",stft_data.shape)
     return fs,nf,stft_data
 
+# invSTFT: inverse Short-time Fourier Transform
+# [inputs]
+#     tf: STFT of input signal (frlen/2+1 x nf)
+# length: length of output signal
+#  frsft: frame shift  (default: frlen/2)
+#    wnd: synthesis window function (frlen x 1, default: optimum window for hamming analysis window)
+# [outputs]
+#    sig: input signal (length x 1)
 
+def invSTFT(stft_data,fs,frlen,frsft,wnd):
+    # t,data_post=sp.istft(stft_data,fs=wav.getframerate(),window="hann",nperseg=512,noverlap=256)
+    nf = stft_data.shape[1] # 分割したフレームの数
+    #print(nf)
+    subspc = np.empty((frlen,1),dtype = "float64")
+    tmpsig = np.zeros(((nf-1)*frsft+frlen,1))
+    for i in range(nf):
+        st = (i*frsft)
+        #print(subspc.shape,stft_data.shape)
+        subspc[0:int(frlen/2)+1,0]=stft_data[:,i]
+        #print(subspc.shape)
+        subspc[0,0]=subspc[0,0]/2
+        subspc[int(frlen/2)+1,0]=subspc[int(frlen/2)+1,0]/2
+
+        # iFFTして出力配列に代入
+        print(subspc.shape)
+        a = np.fft.ifft(subspc)
+        #print("a",a.shape)
+        #print(a)
+        #print("hamming",(hamming(frlen).shape))
+        b = np.fft.ifft(subspc)*(hamming(frlen))
+        #print(hamming(frlen))
+        #print("b",b.shape)
+        #print(((np.fft.ifft(subspc)*(hamming(frlen)).T).real*2).shape)
+        #print(tmpsig[st+0:st+frlen+1,0].shape,((np.fft.ifft(subspc)).real*2).shape)
+        tmpsig[st:st+frlen] = tmpsig[st:st+frlen]+(np.fft.ifft(subspc)).real*2
+    print(tmpsig.shape)
+
+    return stft_data
 
 
 #読み込むサンプルファイル
@@ -83,8 +120,8 @@ print("STFT後の大きさ",stft_data.shape)
 stft_data[100:,:]=0
 
 # 時間領域の波形に戻す
-t,data_post=sp.istft(stft_data,fs=wav.getframerate(),window="hann",nperseg=512,noverlap=256)
-
+#t,data_post=sp.istft(stft_data,fs=wav.getframerate(),window="hann",nperseg=512,noverlap=256)
+data_post = invSTFT(stft_data,wav.getframerate(),512,256,"hann")
 # 2バイトのデータに変換
 data_post=data_post.astype(np.int16)
 

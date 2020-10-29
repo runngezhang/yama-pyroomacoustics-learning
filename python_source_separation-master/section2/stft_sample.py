@@ -75,13 +75,11 @@ def STFT(sig,fs,frlen,frsft,wnd):
     return fs,nf,stft_data
 
 # invSTFT: inverse Short-time Fourier Transform
-# coded by N. Ono (onono@nii.ac.jp) on Apr. 2018.
 # [inputs]
 #     tf: STFT of input signal (frlen/2+1 x nf)
 # length: length of output signal
 #  frsft: frame shift  (default: frlen/2)
 #    wnd: synthesis window function (frlen x 1, default: optimum window for hamming analysis window)
-
 # [outputs]
 #    sig: input signal (length x 1)
 
@@ -90,15 +88,28 @@ def invSTFT(stft_data,fs,frlen,frsft,wnd):
     nf = stft_data.shape[1] # 分割したフレームの数
     #print(nf)
     subspc = np.empty((frlen,1),dtype = "float64")
-    tmpsig = np.empty(((nf-1)*frsft+frlen,1))
+    tmpsig = np.zeros(((nf-1)*frsft+frlen,1))
     for i in range(nf):
         st = (i*frsft)
-        print(subspc.shape,stft_data.shape)
-        subspc[0:int(frlen/2)+1,0]=stft_data[:,i]
-        print(subspc.shape)
+        #print(subspc.shape,stft_data.shape)
+        subspc[0:int(frlen/2)+1,0]=stft_data[:,i] # 
+        #print(subspc.shape)
         subspc[0,0]=subspc[0,0]/2
-        subspc[int(frlen/2+1),1]=subspc[int(frlen/2+1),1]/2
+        subspc[int(frlen/2)+1,0]=subspc[int(frlen/2)+1,0]/2
 
+        # iFFTして出力配列に代入
+        print(subspc.shape)
+        a = np.fft.ifft(subspc)
+        #print("a",a.shape)
+        #print(a)
+        #print("hamming",(hamming(frlen).shape))
+        b = np.fft.ifft(subspc)*(hamming(frlen))
+        #print(hamming(frlen))
+        #print("b",b.shape)
+        #print(((np.fft.ifft(subspc)*(hamming(frlen)).T).real*2).shape)
+        #print(tmpsig[st+0:st+frlen+1,0].shape,((np.fft.ifft(subspc)).real*2).shape)
+        tmpsig[st:st+frlen] = tmpsig[st:st+frlen]+(np.fft.ifft(subspc)).real*2
+    print(tmpsig.shape)
 
     return stft_data
 
@@ -126,3 +137,49 @@ new_data = invSTFT(stft_data,wav.getframerate(),512,256,"hann")
 
 #print(f,t)
 print("stft_data.shape:",stft_data.shape)
+
+
+# 2バイトのデータに変換
+data_post=new_data.astype(np.int16)
+
+"""
+#dataを再生する
+sd.play(data_post,wav.getframerate())
+
+print("再生開始")
+
+#再生が終わるまで待つ
+status = sd.wait()
+
+#waveファイルを閉じる
+wav.close()
+"""
+# 変換前と復元後が一緒であることを確認する（二つ並べてみる）
+fig = plt.figure(figsize=(10,10))
+
+ax1 = fig.add_subplot(2,1,1)
+ax2 = fig.add_subplot(2,1,2)
+
+# 変換前のスペクトグラム
+spectrum, freqs, t, im=ax1.specgram(data,NFFT=512,noverlap=512/16*15, Fs=wav.getframerate())
+# サブタイトル
+ax1.set_title('Original Sound')
+# x軸のラベル
+ax1.set_xlabel("Time [sec]")
+# y軸のラベル
+ax1.set_ylabel("Frequency [Hz]")
+
+# 復元後のスペクトグラム
+spectrum, freqs, t, im=ax2.specgram(data_post,NFFT=512,noverlap=512/16*15, Fs=wav.getframerate())
+# サブタイトル
+ax2.set_title('Restored Sound')
+# x軸のラベル
+ax2.set_xlabel("Time [sec]")
+# y軸のラベル
+ax2.set_ylabel("Frequency [Hz]")
+
+#レイアウトの設定
+fig.tight_layout()
+#plt.savefig("./spectrogram_stft_istft.png")
+plt.show()
+
