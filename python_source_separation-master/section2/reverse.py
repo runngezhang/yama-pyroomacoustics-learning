@@ -4,6 +4,7 @@ import wave as wave
 import numpy as np
 #scipyのsignalモジュールをインポート（stft等信号処理計算用)
 import scipy.signal as sp
+import scipy
 #sounddeviceモジュールをインポート
 import sounddevice as sd
 #matplotlib
@@ -21,7 +22,6 @@ def hamming(nperseg):
         t[i]=0.54+0.46*math.cos(2.0*math.pi/i*t)
     print(t)
     """
-
     return t
 
 
@@ -40,26 +40,27 @@ def hamming(nperseg):
 
 def STFT(sig,fs,frlen,frsft,wnd):
     # フレームの数を測る
-    nf = int(((len(sig)-frlen)/frsft)+1) # データサイズをフレームサイズで割っている
-    print("スライスの大きさ",(sig[0:frlen]).shape)
+    nf = int(scipy.ceil((len(sig)-frlen)/frsft)+1) # データサイズをフレームサイズで割っている
+    #print("スライスの大きさ",(sig[0:frlen]).shape)
     # ハミング窓を計算するために転地する
     hamming_trans = (hamming(frlen)).T
 
-    print("転地した後",hamming_trans.shape)
+    #print("転地した後",hamming_trans.shape)
     print("nf",nf)
     stft_data = []
-    for i in range(1,nf+1): # iの関係で1から215まで
-        st=(i-1)*frsft # ひとつ前の場所から窓をかける
+    for i in range(1,nf): # iの関係で1から215まで
+        st=(i-1) * frsft # ひとつ前の場所から窓をかける
         # スライス処理と窓関数のかけ算
         #print(sig[st:st+frlen].shape,(hamming(frlen).T).shape)
-        a = np.fft.fft((sig[st:st+frlen].T*hamming(frlen)))
+        data_stft_split = np.fft.fft((sig[st:st+frlen].T*hamming(frlen)))
         #print(a)
-        stft_data.append(a)
+        stft_data.append(data_stft_split)
         # 窓関数をかける
         # FFTを行う
     stft_data = np.array(stft_data)
-    print(stft_data.shape)
+    #print("stft_data.shape",stft_data.shape)
     return fs,nf,stft_data
+
 
 
 
@@ -73,19 +74,20 @@ data=wav.readframes(wav.getnframes())
 data=np.frombuffer(data, dtype=np.int16)
 print("元のデータの大きさ",data.shape)
 #短時間フーリエ変換を行う
-f,t,stft_data=sp.stft(data,fs=wav.getframerate(),window="hann",nperseg=512,noverlap=256)
-print(f,t)
-#f,t,stft_data= STFT(data,wav.getframerate(),512,256,"hann")
+#f,t,stft_data=sp.stft(data,fs=wav.getframerate(),window="hann",nperseg=512,noverlap=256)
+#print(f,t)
+f,t,stft_data= STFT(data,wav.getframerate(),512,256,"hann")
 #print(stft_data)
 print("STFT後の大きさ",stft_data.shape)
 #特定の周波数成分を消す(100番目の周波数よりも高い周波数成分を全て消す)
 stft_data[100:,:]=0
 
-#時間領域の波形に戻す
+# 時間領域の波形に戻す
 t,data_post=sp.istft(stft_data,fs=wav.getframerate(),window="hann",nperseg=512,noverlap=256)
 
-#2バイトのデータに変換
+# 2バイトのデータに変換
 data_post=data_post.astype(np.int16)
+
 """
 #dataを再生する
 sd.play(data_post,wav.getframerate())
