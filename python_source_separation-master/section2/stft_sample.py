@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 import math
 from tqdm import tqdm
 
+
 def hamming(nperseg):
     t = sp.hamming(nperseg) # 関数を使う方法
     #print(t)
@@ -89,16 +90,19 @@ def invSTFT(stft_data,fs,frlen,frsft,wnd):
     #print(nf)
     subspc = np.empty((frlen,1),dtype = "float64")
     tmpsig = np.zeros(((nf-1)*frsft+frlen,1))
+    hamming_data = [hamming(frlen)]
+    hamming_data = np.array(hamming_data)
+    print(hamming_data.shape)
     for i in range(nf):
-        st = (i*frsft)
+        st = (i*frsft) # 最初の場所を指定している
         #print(subspc.shape,stft_data.shape)
-        subspc[0:int(frlen/2)+1,0]=stft_data[:,i] # 
+        subspc[0:int(frlen/2)+1,0]=stft_data[:,i]
         #print(subspc.shape)
         subspc[0,0]=subspc[0,0]/2
         subspc[int(frlen/2)+1,0]=subspc[int(frlen/2)+1,0]/2
 
         # iFFTして出力配列に代入
-        print(subspc.shape)
+        #print(subspc.shape)
         a = np.fft.ifft(subspc)
         #print("a",a.shape)
         #print(a)
@@ -107,11 +111,20 @@ def invSTFT(stft_data,fs,frlen,frsft,wnd):
         #print(hamming(frlen))
         #print("b",b.shape)
         #print(((np.fft.ifft(subspc)*(hamming(frlen)).T).real*2).shape)
-        #print(tmpsig[st+0:st+frlen+1,0].shape,((np.fft.ifft(subspc)).real*2).shape)
-        tmpsig[st:st+frlen] = tmpsig[st:st+frlen]+(np.fft.ifft(subspc)).real*2
+        #print(tmpsig[st+0:st+frlen+1,0].shape,((np.fft.ifft(subspc))*hamming_data.T.real*2).shape)
+        tmpsig[st:st+frlen] = tmpsig[st:st+frlen]+((np.fft.ifft(subspc)*hamming_data.T).real*2)
     print(tmpsig.shape)
+    hamming1 = [hamming(frlen)]
+    hamming1 = np.array(hamming1)
+    print(hamming1.shape)
 
-    return stft_data
+    # 最後に切り出し？？
+    sig=tmpsig[frlen+1:(nf-1)*frsft+frlen]
+    len = sig.shape[0]
+    print(sig.shape)
+    sig = sig.reshape(len)
+    print("sig.shape",sig.shape)
+    return sig
 
 #読み込むサンプルファイル
 sample_wave_file="/Users/kenta/Programing/github/yama-pyroomacoustics-learning/python_source_separation-master/section2/CMU_ARCTIC/cmu_us_axb_arctic/wav/arctic_a0001.wav"
@@ -130,30 +143,25 @@ print(data.shape,wav.getframerate())
 
 #短時間フーリエ変換を行う
 f,t,stft_data=sp.stft(data,fs=wav.getframerate(),window="hann",nperseg=512,noverlap=256)
-#stft_data = STFT1(data,wav.getframerate(), noverlap=None)
+
+#stft_data = STFT1(data,wav.getframerate(), noverlap=256)
 #f,t,stft_data= STFT(data,wav.getframerate(),512,256,"hann")
 
-new_data = invSTFT(stft_data,wav.getframerate(),512,256,"hann")
+
 
 #print(f,t)
 print("stft_data.shape:",stft_data.shape)
 
+# 時間領域の波形に戻す
+#t,data_post=sp.istft(stft_data,fs=wav.getframerate(),window="hann",nperseg=512,noverlap=256)
+#print("data_post.shape:",data_post.shape)
+data_post = invSTFT(stft_data,wav.getframerate(),512,256,"hann")
+print("data_post.shape2:",data_post.shape)
 
 # 2バイトのデータに変換
-data_post=new_data.astype(np.int16)
+data_post=data_post.astype(np.int16)
 
-"""
-#dataを再生する
-sd.play(data_post,wav.getframerate())
 
-print("再生開始")
-
-#再生が終わるまで待つ
-status = sd.wait()
-
-#waveファイルを閉じる
-wav.close()
-"""
 # 変換前と復元後が一緒であることを確認する（二つ並べてみる）
 fig = plt.figure(figsize=(10,10))
 
