@@ -117,11 +117,9 @@ def invSTFT(stft_data,fs,frlen,frsft,wnd):
         subspc[int(frlen/2)+1,0]=subspc[int(frlen/2)+1,0]/2
 
         # iFFTして出力配列に代入
-        a = np.fft.ifft(subspc)
-        #print("a",a.shape)
-        #print(a)
-        #print("hamming",(hamming(frlen).shape))
-        b = np.fft.ifft(subspc)*(hamming(frlen))
+        #a = np.fft.ifft(subspc)
+
+        #b = np.fft.ifft(subspc)*(hamming(frlen))
         #print(hamming(frlen))
         #print("b",b.shape)
         #print(((np.fft.ifft(subspc)*(hamming(frlen)).T).real*2).shape)
