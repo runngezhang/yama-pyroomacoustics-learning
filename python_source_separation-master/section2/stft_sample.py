@@ -40,17 +40,6 @@ def hamming(nperseg):
 # f : 出力されるデータの周波数軸の各インデックスの具体的な周波数〔Hz〕
 # t : フレーム軸の各インデックスの具体的な時間〔sec〕
 # stft_data: STFT of input signal (frlen/2+1 x nf) STFTの信号 短時間 フーリエ変換後の複素数の信号 y(l, k)
-def STFT1(s, Lf, noverlap=None):
-    if noverlap==None:
-        noverlap = Lf//2
-    l = s.shape[0]
-    win = np.hanning(Lf)
-    Mf = Lf//2 + 1
-    Nf = int(np.ceil((l-noverlap)/(Lf-noverlap)))-1
-    S = np.empty([Mf, Nf], dtype=np.complex128)
-    for n in tqdm(range(Nf)):
-        S[:,n] = np.fft.rfft(s[(Lf-noverlap)*n:(Lf-noverlap)*n+Lf] * win, n=Lf, axis=0)
-    return S
 
 def STFT(sig,fs,frlen,frsft,wnd):
     # フレームの数を測る
@@ -60,17 +49,16 @@ def STFT(sig,fs,frlen,frsft,wnd):
     hamming_trans = (hamming(frlen)).T
 
     #print("転地した後",hamming_trans.shape)
-    print("nf",nf)
+    #print("nf",nf)
     stft_data = []
     for i in range(1,nf): # iの関係で1から215まで
         st=(i-1) * frsft # ひとつ前の場所から窓をかける
         # スライス処理と窓関数のかけ算
         #print(sig[st:st+frlen].shape,(hamming(frlen).T).shape)
+        # 窓関数をかける & FFTを行う
         data_stft_split = np.fft.fft((sig[st:st+frlen].T*hamming(frlen)))
         #print(a)
         stft_data.append(data_stft_split)
-        # 窓関数をかける
-        # FFTを行う
     stft_data = np.array(stft_data)
     #print("stft_data.shape",stft_data.shape)
     return fs,nf,stft_data
@@ -78,15 +66,20 @@ def STFT(sig,fs,frlen,frsft,wnd):
 # opt_synwndを作成
 def opt_synwnd(anawnd,frsft):
     # ハニング窓を元に戻すやつ
-    frlen,col = anawnd.shape
-    synwnd = np.zeros((frlen,1))
+    print(anawnd.shape)
+    col,frlen = anawnd.shape
+    print("AAAAAAAAAAAAAAAA",frlen,col)
+    synwnd = np.zeros((frlen),dtype="float64")
+    print(synwnd.shape)
     for i in range(frsft):
         amp = 0
         for j in range(int(frlen/frsft)):
-            amp = amp + anawnd[i + (j-1)* frsft] * anawnd[i + (j-1)* frsft]
+            print(i+1 + (j)* frsft)
+            amp = amp + anawnd[i+1 + (j)* frsft] * anawnd[i+1 + (j)* frsft]
 
         for j in range(int(frlen/frsft)):
             synwnd[i+(j-1) * frsft] = anawnd[i+(j-1)*frsft,1]/amp
+        print(synwnd.shape)
     return synwnd
 
 
@@ -100,7 +93,7 @@ def opt_synwnd(anawnd,frsft):
 #    sig: input signal (length x 1)
 
 def invSTFT(stft_data,fs,frlen,frsft,wnd):
-    # t,data_post=sp.istft(stft_data,fs=wav.getframerate(),window="hann",nperseg=512,noverlap=256)
+    #t,data_post=sp.istft(stft_data,fs=wav.getframerate(),window="hann",nperseg=512,noverlap=256)
     nf = stft_data.shape[1] # 分割したフレームの数
     #print(nf)
     subspc = np.empty((frlen,1),dtype = "float64")
@@ -108,6 +101,7 @@ def invSTFT(stft_data,fs,frlen,frsft,wnd):
     hamming_data = [hamming(frlen)]
     hamming_data = np.array(hamming_data)
     print(hamming_data.shape)
+    print("----------------------------")
     #hamming_data = opt_synwnd(hamming_data,frsft)
     print("hamming_data.shape",hamming_data.shape)
     for i in range(nf):
@@ -118,7 +112,6 @@ def invSTFT(stft_data,fs,frlen,frsft,wnd):
 
         # iFFTして出力配列に代入
         #a = np.fft.ifft(subspc)
-
         #b = np.fft.ifft(subspc)*(hamming(frlen))
         #print(hamming(frlen))
         #print("b",b.shape)
@@ -128,6 +121,7 @@ def invSTFT(stft_data,fs,frlen,frsft,wnd):
     print(tmpsig.shape)
     hamming1 = [hamming(frlen)]
     hamming1 = np.array(hamming1)
+
     print(hamming1.shape)
 
     # 最後に切り出し？？
@@ -156,7 +150,6 @@ print(data.shape,wav.getframerate())
 #短時間フーリエ変換を行う
 f,t,stft_data=sp.stft(data,fs=wav.getframerate(),window="hann",nperseg=512,noverlap=256)
 
-#stft_data = STFT1(data,wav.getframerate(), noverlap=256)
 #f,t,stft_data= STFT(data,wav.getframerate(),512,256,"hann")
 
 
