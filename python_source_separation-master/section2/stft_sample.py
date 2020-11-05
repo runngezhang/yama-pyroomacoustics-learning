@@ -75,6 +75,21 @@ def STFT(sig,fs,frlen,frsft,wnd):
     #print("stft_data.shape",stft_data.shape)
     return fs,nf,stft_data
 
+# opt_synwndを作成
+def opt_synwnd(anawnd,frsft):
+    # ハニング窓を元に戻すやつ
+    frlen,col = anawnd.shape
+    synwnd = np.zeros((frlen,1))
+    for i in range(frsft):
+        amp = 0
+        for j in range(int(frlen/frsft)):
+            amp = amp + anawnd[i + (j-1)* frsft] * anawnd[i + (j-1)* frsft]
+
+        for j in range(int(frlen/frsft)):
+            synwnd[i+(j-1) * frsft] = anawnd[i+(j-1)*frsft,1]/amp
+    return synwnd
+
+
 # invSTFT: inverse Short-time Fourier Transform
 # [inputs]
 #     tf: STFT of input signal (frlen/2+1 x nf)
@@ -93,6 +108,8 @@ def invSTFT(stft_data,fs,frlen,frsft,wnd):
     hamming_data = [hamming(frlen)]
     hamming_data = np.array(hamming_data)
     print(hamming_data.shape)
+    #hamming_data = opt_synwnd(hamming_data,frsft)
+    print("hamming_data.shape",hamming_data.shape)
     for i in range(nf):
         st = (i*frsft) # 最初の場所を指定している
         #print(subspc.shape,stft_data.shape)
@@ -191,3 +208,15 @@ fig.tight_layout()
 #plt.savefig("./spectrogram_stft_istft.png")
 plt.show()
 
+"""
+#dataを再生する
+sd.play(data_post,wav.getframerate())
+
+print("再生開始")
+
+#再生が終わるまで待つ
+status = sd.wait()
+
+#waveファイルを閉じる
+wav.close()
+"""
