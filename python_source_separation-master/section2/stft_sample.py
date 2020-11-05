@@ -112,14 +112,11 @@ def invSTFT(stft_data,fs,frlen,frsft,wnd):
     print("hamming_data.shape",hamming_data.shape)
     for i in range(nf):
         st = (i*frsft) # 最初の場所を指定している
-        #print(subspc.shape,stft_data.shape)
         subspc[0:int(frlen/2)+1,0]=stft_data[:,i]
-        #print(subspc.shape)
         subspc[0,0]=subspc[0,0]/2
         subspc[int(frlen/2)+1,0]=subspc[int(frlen/2)+1,0]/2
 
         # iFFTして出力配列に代入
-        #print(subspc.shape)
         a = np.fft.ifft(subspc)
         #print("a",a.shape)
         #print(a)
