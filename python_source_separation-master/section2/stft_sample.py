@@ -132,6 +132,31 @@ def invSTFT(stft_data,fs,frlen,frsft,wnd):
     print("sig.shape",sig.shape)
     return sig
 
+# -----スペクトログラムの表示-----------
+# 入力
+# tf:STFT変換後の２次元配列
+# frsft:フレーム長
+# sfeq:サンプリング周期
+def tfplot(tf, frsft, sfrq):
+    row = tf.shape[0]
+    col = tf.shape[1]
+    frlen = (row - 1)*2 # 波長の長さを確認
+    #x = np.array(range(col)*frsft/sfrq)
+    #y = np.array(range(col)*sfrq/frlen/1000.0)
+    image_tf = np.empty_like(tf)
+    print(tf.shape)
+    
+    for i in range(row):
+        for j in range(col):
+            image_tf[i][j] = 20* math.log10(abs(tf[i][j]))
+    image_tf.clip(0, 255)
+    image_tf = image_tf.astype('uint8')
+    cv2.imshow("image",image_tf)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+    return image_tf
+
+
 #読み込むサンプルファイル
 sample_wave_file="/Users/kenta/Programing/github/yama-pyroomacoustics-learning/python_source_separation-master/section2/CMU_ARCTIC/cmu_us_axb_arctic/wav/arctic_a0001.wav"
 #ファイルを読み込む
@@ -149,11 +174,10 @@ print("ライブラリでの大きさ",stft_data.shape)
 f,t,my_stft_data= STFT(data,wav.getframerate(),512,256,"hann")
 print("自作STFTでの大きさ",my_stft_data.shape)
 
-print(stft_data,my_stft_data)
+#print(stft_data,my_stft_data)
+print(tfplot(stft_data,512,wav.getframerate()))
 
-print(stft_data.dtype)
-print(my_stft_data.dtype)
-
+"""
 fig = plt.figure(figsize=(10,10))
 ax1 = fig.add_subplot(2,1,1)
 ax2 = fig.add_subplot(2,1,2)
@@ -163,7 +187,7 @@ ax1.set_title('library STFT')
 ax2.set_title('My STFT')
 fig.tight_layout()
 plt.show()
-
+"""
 
 """
 # 時間領域の波形に戻す
