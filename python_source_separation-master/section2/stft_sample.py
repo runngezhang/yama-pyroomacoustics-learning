@@ -46,26 +46,23 @@ def STFT(sig,fs,frlen,frsft,wnd):
     # フレームの数を測る
     nf = int(scipy.ceil((len(sig)-frlen)/frsft)+1) # データサイズをフレームサイズで割っている
     print(nf)
-    #print("スライスの大きさ",(sig[0:frlen]).shape)
     # ハミング窓を計算するために転地する
     hamming_trans = (hamming(frlen)).T
 
-    #print("転地した後",hamming_trans.shape)
-    #print("nf",nf)
     stft_data = []
     for i in range(1,nf): # iの関係で1から215まで
-        st=(i-1) * frsft # ひとつ前の場所から窓をかける
-        # スライス処理と窓関数のかけ算
-        #print(sig[st:st+frlen].shape,(hamming(frlen).T).shape)
+        st =(i-1) * frsft # ひとつ前の場所から窓をかける
         # 窓関数をかける & FFTを行う
-        data_stft_split = np.fft.fft((sig[st:st+frlen].T*hamming(frlen)))
-        #print(a)
+        data_stft_split = np.fft.fft((sig[st:st+frlen].T*hamming(frlen))) # [x+iy,x+iy,...]の形(frlen個)
+        print(i,st,sig.shape)
         stft_data.append(data_stft_split)
     stft_data = np.array(stft_data)
+
+    # 転置して元に戻す
     stft_data = stft_data.T
     num = int(stft_data.shape[0]/2)
-    stft_data = stft_data[0:num]
-    print("stft_data.shape",stft_data.shape)
+    stft_data = stft_data[0:num] # 大きさを半分にする(元の音声が実数だから)
+    print("my_stft_data.shape",stft_data.shape)
     return fs,nf,stft_data
 
 # opt_synwndを作成
@@ -153,6 +150,8 @@ print("ライブラリでの大きさ",stft_data.shape)
 #自作ライブラリでのSTFT
 f,t,my_stft_data= STFT(data,wav.getframerate(),512,256,"hann")
 
+print(stft_data.dtype)
+print(my_stft_data.dtype)
 
 fig = plt.figure(figsize=(10,10))
 ax1 = fig.add_subplot(2,1,1)
@@ -164,8 +163,7 @@ ax2.set_title('My STFT')
 fig.tight_layout()
 plt.show()
 
-#print(f,t)
-print("stft_data.shape:",stft_data.shape)
+
 """
 # 時間領域の波形に戻す
 #t,data_post=sp.istft(stft_data,fs=wav.getframerate(),window="hann",nperseg=512,noverlap=256)
