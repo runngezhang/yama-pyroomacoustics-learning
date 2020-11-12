@@ -1,3 +1,4 @@
+#istft_sample.py
 # stft_sample.py
 #wave形式の音声波形を読み込むためのモジュール(wave)をインポート
 import wave as wave
@@ -45,7 +46,6 @@ def hamming(nperseg):
 def STFT(sig,fs,frlen,frsft,wnd):
     # フレームの数を測る
     nf = int(scipy.ceil((len(sig)-frlen)/frsft)+1) # データサイズをフレームサイズで割っている
-    print(nf)
     #print("スライスの大きさ",(sig[0:frlen]).shape)
     # ハミング窓を計算するために転地する
     hamming_trans = (hamming(frlen)).T
@@ -62,10 +62,7 @@ def STFT(sig,fs,frlen,frsft,wnd):
         #print(a)
         stft_data.append(data_stft_split)
     stft_data = np.array(stft_data)
-    stft_data = stft_data.T
-    num = int(stft_data.shape[0]/2)
-    stft_data = stft_data[0:num]
-    print("stft_data.shape",stft_data.shape)
+    #print("stft_data.shape",stft_data.shape)
     return fs,nf,stft_data
 
 # opt_synwndを作成
@@ -146,27 +143,21 @@ data=wav.readframes(wav.getnframes())
 #dataを2バイトの数値列に変換
 data=np.frombuffer(data, dtype=np.int16)
 print("元のデータの大きさ",data.shape)
+#短時間フーリエ変換を行う(自作)
+#f,t,stft_data= STFT(data,wav.getframerate(),512,256,"hann")
 
 #短時間フーリエ変換を行う(ライブラリ)
 f,t,stft_data=sp.stft(data,fs=wav.getframerate(),window="hann",nperseg=512,noverlap=256)
-print("ライブラリでの大きさ",stft_data.shape)
-#自作ライブラリでのSTFT
-f,t,my_stft_data= STFT(data,wav.getframerate(),512,256,"hann")
 
 
-fig = plt.figure(figsize=(10,10))
-ax1 = fig.add_subplot(2,1,1)
-ax2 = fig.add_subplot(2,1,2)
-ax1.plot(stft_data)
-ax2.plot(my_stft_data)
-ax1.set_title('library STFT')
-ax2.set_title('My STFT')
-fig.tight_layout()
+f,t,stft_data= STFT(data,wav.getframerate(),512,256,"hann")
+
+plt.plot(stft_data)
 plt.show()
 
 #print(f,t)
 print("stft_data.shape:",stft_data.shape)
-"""
+
 # 時間領域の波形に戻す
 #t,data_post=sp.istft(stft_data,fs=wav.getframerate(),window="hann",nperseg=512,noverlap=256)
 #print("data_post.shape:",data_post.shape)
@@ -206,7 +197,7 @@ ax2.set_ylabel("Frequency [Hz]")
 fig.tight_layout()
 #plt.savefig("./spectrogram_stft_istft.png")
 plt.show()
-"""
+
 """
 #dataを再生する
 sd.play(data_post,wav.getframerate())
