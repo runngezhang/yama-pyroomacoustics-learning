@@ -44,7 +44,7 @@ def hamming(nperseg):
 
 def STFT(sig,fs,frlen,frsft,wnd):
     # フレームの数を測る
-    nf = int(scipy.ceil((len(sig)-frlen)/frsft)+1) # データサイズをフレームサイズで割っている
+    nf = int(np.ceil((len(sig)-frlen)/frsft)+1) # データサイズをフレームサイズで割っている
     print(nf)
     # ハミング窓を計算するために転地する
     hamming_trans = (hamming(frlen)).T
@@ -54,15 +54,14 @@ def STFT(sig,fs,frlen,frsft,wnd):
         st =(i-1) * frsft # ひとつ前の場所から窓をかける
         # 窓関数をかける & FFTを行う
         data_stft_split = np.fft.fft((sig[st:st+frlen].T*hamming(frlen))) # [x+iy,x+iy,...]の形(frlen個)
-        print(i,st,sig.shape)
+        #print(i,st,sig.shape)
         stft_data.append(data_stft_split)
     stft_data = np.array(stft_data)
 
     # 転置して元に戻す
     stft_data = stft_data.T
-    num = int(stft_data.shape[0]/2)
+    num = int(stft_data.shape[0]/2)+1
     stft_data = stft_data[0:num] # 大きさを半分にする(元の音声が実数だから)
-    print("my_stft_data.shape",stft_data.shape)
     return fs,nf,stft_data
 
 # opt_synwndを作成
@@ -97,7 +96,6 @@ def opt_synwnd(anawnd,frsft):
 def invSTFT(stft_data,fs,frlen,frsft,wnd):
     #t,data_post=sp.istft(stft_data,fs=wav.getframerate(),window="hann",nperseg=512,noverlap=256)
     nf = stft_data.shape[1] # 分割したフレームの数
-    #print(nf)
     subspc = np.empty((frlen,1),dtype = "float64")
     tmpsig = np.zeros(((nf-1)*frsft+frlen,1))
     hamming_data = [hamming(frlen)]
@@ -149,6 +147,9 @@ f,t,stft_data=sp.stft(data,fs=wav.getframerate(),window="hann",nperseg=512,nover
 print("ライブラリでの大きさ",stft_data.shape)
 #自作ライブラリでのSTFT
 f,t,my_stft_data= STFT(data,wav.getframerate(),512,256,"hann")
+print("自作STFTでの大きさ",my_stft_data.shape)
+
+print(stft_data,my_stft_data)
 
 print(stft_data.dtype)
 print(my_stft_data.dtype)
