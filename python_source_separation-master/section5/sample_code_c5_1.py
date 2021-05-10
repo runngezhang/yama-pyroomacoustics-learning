@@ -8,7 +8,7 @@ import scipy.signal as signal
 np.random.seed(0)
 
 #畳み込みに用いる音声波形
-clean_wave_file="./CMU_ARCTIC/cmu_us_aew_arctic/wav/arctic_a0001.wav"
+clean_wave_file="cmu_arctic_us_aew_a0001.wav"
 
 wav=wave.open(clean_wave_file)
 data=wav.readframes(wav.getnframes())

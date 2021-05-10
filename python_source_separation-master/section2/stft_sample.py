@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 import math
 from tqdm import tqdm
 import cv2
+from PIL import Image
 
 
 def hamming(nperseg):
@@ -140,25 +141,37 @@ def invSTFT(stft_data,fs,frlen,frsft,wnd):
 def tfplot(tf, frsft, sfrq):
     row = tf.shape[0]
     col = tf.shape[1]
+    print(col)
     frlen = (row - 1)*2 # 波長の長さを確認
     #x = np.array(range(col)*frsft/sfrq)
     #y = np.array(range(col)*sfrq/frlen/1000.0)
     image_tf = np.empty_like(tf)
     print(tf.shape)
-    
+    #tf = abs(tf).astype('float64')
+
     for i in range(row):
         for j in range(col):
-            image_tf[i][j] = 20* math.log10(abs(tf[i][j]))
+            try:
+                image_tf[i][j] = 20* math.log10(abs(tf[i][j]))
+            except:
+                image_tf[i][j] = 0
+
     image_tf.clip(0, 255)
     image_tf = image_tf.astype('uint8')
-    cv2.imshow("image",image_tf)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
+    print(image_tf.shape)
+    
     return image_tf
 
+def cv2pil(image_cv):
+    image_cv = cv2.cvtColor(image_cv, cv2.COLOR_BGR2RGB)
+    image_pil = Image.fromarray(image_cv)
+    image_pil = image_pil.convert('RGB')
+
+    return image_pil
 
 #読み込むサンプルファイル
-sample_wave_file="/Users/kenta/Programing/github/yama-pyroomacoustics-learning/python_source_separation-master/section2/CMU_ARCTIC/cmu_us_axb_arctic/wav/arctic_a0001.wav"
+sample_wave_file="arctic_a0001.wav"
+#sample_wave_file= "chirp.wav"
 #ファイルを読み込む
 wav=wave.open(sample_wave_file)
 #PCM形式の波形データを読み込み
@@ -170,12 +183,28 @@ print("元のデータの大きさ",data.shape)
 #短時間フーリエ変換を行う(ライブラリ)
 f,t,stft_data=sp.stft(data,fs=wav.getframerate(),window="hann",nperseg=512,noverlap=256)
 print("ライブラリでの大きさ",stft_data.shape)
+# データを小さくする
+
+
 #自作ライブラリでのSTFT
 f,t,my_stft_data= STFT(data,wav.getframerate(),512,256,"hann")
 print("自作STFTでの大きさ",my_stft_data.shape)
 
 #print(stft_data,my_stft_data)
-print(tfplot(stft_data,512,wav.getframerate()))
+library_image = (tfplot(stft_data,512,wav.getframerate()))
+my_image = tfplot(my_stft_data,512,wav.getframerate())
+
+# OpenCVからPILに変更する(PIL版)
+#image_lib_pil = cv2pil(library_image)
+#image_my_pil = cv2pil(my_image)
+#image_lib_pil.show()
+#image_my_pil.show()
+
+#OpenCV版
+cv2.imshow("image",library_image)
+cv2.imshow('image2',my_image)
+cv2.waitKey(0)
+cv2.destroyAllWindows()
 
 """
 fig = plt.figure(figsize=(10,10))
